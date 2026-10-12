@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة أ. مساعد السعدان - ثانوية الأمير عبدالمجيد</title>
+    <title>بوابة الكفايات والقدرات - أ. مساعد السعدان وأ. عبدالعزيز الفيفي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root { 
@@ -15,7 +16,7 @@
             --text-color: #1e293b; --card-bg: #ffffff;
         }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Arial; 
             background: var(--bg-page); color: var(--text-color); margin: 0; padding: 20px; 
             display: flex; flex-direction: column; align-items: center; line-height: 1.6;
             box-sizing: border-box;
@@ -32,36 +33,53 @@
         .top-action-bar {
             width: 100%; max-width: 850px; background: #1e293b; border-radius: 15px; padding: 14px 20px;
             display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 25px; box-sizing: border-box; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 25px; box-sizing: border-box; gap: 12px; flex-wrap: wrap; z-index: 999;
         }
-        .btn { border: none; padding: 10px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 0.9rem; }
-        .array-import-box {
+        .bar-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn { border: none; padding: 10px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; font-size: 0.9rem; }
+        .btn:hover { opacity: 0.9; }
+        .array-import-box, .search-result-box {
             width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 15px; padding: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px dashed #0284c7; margin-bottom: 25px; box-sizing: border-box;
         }
         .array-textarea {
-            width: 100%; height: 180px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
+            width: 100%; height: 160px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
             font-family: monospace; font-size: 0.85rem; direction: ltr; text-align: left; outline: none; box-sizing: border-box; margin-bottom: 10px;
         }
         .auth-card {
             background: var(--card-bg); width: 100%; max-width: 850px; border-radius: 20px; padding: 40px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; margin-bottom: 25px;
         }
-        .auth-input { width: 80%; max-width: 400px; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; margin-bottom: 15px; text-align: center; font-size: 1.1rem; outline: none; }
+        .auth-input, .styled-select-input { width: 80%; max-width: 400px; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; margin-bottom: 15px; text-align: center; font-size: 1.1rem; outline: none; font-family: inherit; background: #fff; }
         .container { width: 100%; max-width: 850px; padding-bottom: 120px; display: none; box-sizing: border-box; }
-        .question-card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 2px solid var(--card-border); position: relative; text-align: right; }
+        .question-card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 2px solid var(--card-border); position: relative; text-align: right; box-sizing: border-box; }
         .question-card::before { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px; background: var(--k-purple); border-radius: 0 10px 10px 0; }
+        .question-card.unanswered-alert { border: 2px solid var(--q-red) !important; background-color: #fff5f5; }
+        .card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
         .q-number-badge { background: var(--k-purple); color: white; padding: 4px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; }
-        .q-text-input { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; text-align: right; background: rgba(0,0,0,0.02); }
+        .type-select { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; color: var(--royal-blue); }
+        .q-text-input { width: 100%; min-height: 60px; padding: 12px; border: 2px solid #cbd5e1; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; outline: none; text-align: right; box-sizing: border-box; background: rgba(0,0,0,0.02); resize: none; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .opt-pair-row { display: flex; align-items: center; background: var(--card-bg); border: 1.5px solid #d1d5db; border-radius: 10px; padding: 12px; cursor: pointer; gap: 8px; }
-        .opt-label { font-weight: bold; color: var(--royal-blue); }
-        .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; }
-        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .admin-only { display: none !important; }
+        .opt-label { font-weight: bold; color: var(--royal-blue); white-space: nowrap; }
+        .opt-word { width: 100%; border: none; outline: none; font-weight: bold; color: inherit; background: transparent; text-align: right; font-family: inherit; cursor: inherit; }
+        .correct-ans-box { margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid #bbf7d0; text-align: right; display: flex; align-items: center; gap: 10px; }
+        .correct-input { flex: 1; background: transparent; border: none; outline: none; color: #166534; font-weight: bold; text-align: right; font-family: inherit; }
+        body.student-mode .top-action-bar, body.student-mode .array-import-box, body.student-mode .search-result-box, body.student-mode .remove-btn, body.student-mode .type-select, body.student-mode .correct-ans-box, body.student-mode .admin-only { display: none !important; }
         body.student-mode .selected-opt { background: rgba(59, 130, 246, 0.2) !important; border: 2px solid var(--royal-blue) !important; }
+        #report-modal, #cloud-modal, #history-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 650px; background: #ffffff; color: #1e293b; z-index: 2000; border-radius: 20px; padding: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.4); box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+        .cloud-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; gap: 10px; }
     </style>
 </head>
 <body>
+
+    <div id="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1999;" onclick="closeModals()"></div>
+
+    <div id="cloud-modal">
+        <h2 style="text-align: center; color: var(--royal-blue); margin-top:0;"><i class="fas fa-cloud"></i> النماذج المحفوظة في سحابة أ. مساعد السعدان</h2>
+        <div id="cloud-models-list" style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"></div>
+        <button class="btn" style="background:#64748b; width:100%; margin-top:20px; justify-content:center;" onclick="closeModals()">إغلاق</button>
+    </div>
 
     <div class="user-header">
         <div style="flex:1; text-align:right;"><h2 class="user-name">أ. مساعد السعدان</h2></div>
@@ -70,13 +88,21 @@
     </div>
 
     <div class="top-action-bar admin-only">
-        <span style="color: #38bdf8; font-weight: bold;">لوحة تحكم المعلم</span>
-        <button class="btn" style="background: #10b981;" onclick="generateStudentShareCode()"><i class="fas fa-code"></i> توليد كود النشر النهائي للطلاب</button>
+        <div class="bar-group">
+            <span id="current-model-label" style="color: #38bdf8; font-weight: bold;">📁 نموذج جديد</span>
+        </div>
+        <div class="bar-group">
+            <button class="btn" style="background: #a855f7;" onclick="saveToCloud()"><i class="fas fa-save"></i> حفظ النموذج</button>
+            <button class="btn" style="background: #4f46e5;" onclick="loadFromCloud()"><i class="fas fa-folder-open"></i> فتح نموذج</button>
+            <button class="btn" style="background: #06b6d4;" onclick="copyCurrentModelLink()"><i class="fas fa-link"></i> رابط الطلاب</button>
+            <button class="btn" style="background: #3b82f6;" onclick="addQuestion()"><i class="fas fa-plus"></i> إضافة سؤال</button>
+        </div>
     </div>
 
     <div id="student-auth-container" style="display:none;">
         <div class="auth-card">
             <h2 style="color: var(--royal-blue); margin-top: 0;">تسجيل دخول الطالب 🎓</h2>
+            <div id="student-exam-title-badge" style="background: #e0f2fe; color: #0369a1; padding: 10px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; display: none;"></div>
             <p style="color: #64748b; margin-bottom: 20px;">الرجاء إدخال إيميل منصة مدرستي المعتمد لبدء الاختبار:</p>
             <input type="email" id="studentEmailInput" class="auth-input" placeholder="sxxxxxxx@rb.moe.gov.sa">
             <br>
@@ -86,34 +112,25 @@
     </div>
 
     <div class="array-import-box admin-only">
-        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;">ألصق مصفوفة الأسئلة هنا:</label>
-        <textarea id="arrayInputText" class="array-textarea" placeholder="[ { q: 'السؤال هنا', opts: ['أ', 'ب', 'ج', 'د'], ans: 'أ' } ]"></textarea>
-        <button class="btn" style="background:#0284c7; width:100%; justify-content:center;" onclick="importArrayQuestions()">توليد الأسئلة في الصفحة</button>
+        <label style="display: block; font-weight: bold; color: #0284c7; margin-bottom: 8px;"><i class="fas fa-file-code"></i> مصفوفة الأسئلة البرمجية (تتحدث وتُحفظ تلقائياً):</label>
+        <textarea id="arrayInputText" class="array-textarea" placeholder="[ { q: '...', opts: ['...'], ans: '...' } ]"></textarea>
+        <button class="btn" style="background:#0284c7; width:100%; justify-content:center;" onclick="importArrayQuestions()">توليد وتوزيع الأسئلة تلقائياً</button>
     </div>
 
     <div class="container" id="quiz-content"></div>
 
     <div id="student-actions" style="display: none; text-align: center; margin-bottom: 50px;">
-        <button class="btn" style="background:#10b981; padding:15px 30px" onclick="gradeExam()">انتهيت.. اعتماد النتيجة وسحب الدرجة لسحاب أ. مساعد</button>
+        <button class="btn" style="background:#10b981; padding:15px 30px" onclick="gradeExam()">انتهيت.. اعتماد النتيجة وإرسالها لسحاب أ. مساعد 🎓</button>
     </div>
 
     <script>
-        // مصفوفة الأسئلة الثابتة داخل الصفحة (تضمن ظهورها فوراً للطلاب دون مشاكل سحابية في جلب النماذج)
-        const embeddedExamData = [
-            {
-                q: "مثال على سؤال: الكفاية النحوية تعنى بدراسة...؟",
-                opts: ["بنية الكلمة والجملة", "الاملاء والخط", "التعبير الكتابي", "القراءة التحليلية"],
-                ans: "بنية الكلمة والجملة"
-            }
-        ];
+        let currentOpenModelName = null;
 
-        let authenticatedStudentEmail = "";
-        let authenticatedStudentName = "";
-
-        // ربط قاعدة بيانات أستاذ مساعد (msad-e258c) المخصصة لاستقبال نتائج الطلاب ولوحة الشرف
+        // إعدادات سحابة وقاعدة بيانات أستاذ مساعد (msad-e258c)
         const firebaseConfig = {
             apiKey: "AIzaSyDGftCpTmowkhQlNAgH_o7dIMtD-RKSNaM",
             authDomain: "msad-e258c.firebaseapp.com",
+            databaseURL: "https://msad-e258c-default-rtdb.firebaseio.com",
             projectId: "msad-e258c",
             storageBucket: "msad-e258c.firebasestorage.app",
             messagingSenderId: "680278639571",
@@ -121,130 +138,250 @@
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const fsDb = firebase.firestore();
+        const rtdb = firebase.database();
+
+        function addQuestion(data = null) {
+            const container = document.getElementById('quiz-content');
+            const card = document.createElement('div');
+            card.className = "question-card";
+
+            const qText = data ? (data.q || "") : "";
+            const opts = data && data.opts ? data.opts : ["", "", "", ""];
+            const ans = data ? (data.ans || "") : "";
+
+            card.innerHTML = `
+                <div class="card-meta">
+                    <span class="q-number-badge"></span>
+                    <i class="fas fa-times-circle" style="color:#cbd5e1; cursor:pointer; font-size:1.3rem;" onclick="this.closest('.question-card').remove();updateNumbers();saveAll();"></i>
+                </div>
+                <textarea class="q-text-input q-main" placeholder="اكتب السؤال هنا..." oninput="saveAll()">${qText}</textarea>
+                <div class="options-grid">
+                    <div class="opt-pair-row"><span class="opt-label">أ)</span><input type="text" class="opt-word opt" value="${opts[0]||''}" oninput="saveAll()"></div>
+                    <div class="opt-pair-row"><span class="opt-label">ب)</span><input type="text" class="opt-word opt" value="${opts[1]||''}" oninput="saveAll()"></div>
+                    <div class="opt-pair-row"><span class="opt-label">ج)</span><input type="text" class="opt-word opt" value="${opts[2]||''}" oninput="saveAll()"></div>
+                    <div class="opt-pair-row"><span class="opt-label">د)</span><input type="text" class="opt-word opt" value="${opts[3]||''}" oninput="saveAll()"></div>
+                </div>
+                <div class="correct-ans-box admin-only">
+                    <input type="text" placeholder="الإجابة الصحيحة تماماً كما هي في أحد الخيارات" class="correct-input ans-val" value="${ans}" oninput="saveAll()">
+                </div>
+                <div style="display:none;" data-copyright-owner="أ/ عبدالعزيز الفيفي - ثانوية الأمير عبدالمجيد"></div>
+            `;
+            container.appendChild(card);
+            
+            card.querySelectorAll('.opt-pair-row').forEach(row => {
+                row.onclick = () => {
+                    if (document.body.classList.contains('student-mode')) {
+                        card.querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt'));
+                        row.classList.add('selected-opt');
+                    }
+                };
+            });
+
+            updateNumbers();
+            saveAll();
+        }
+
+        function updateNumbers() {
+            document.querySelectorAll('.q-number-badge').forEach((b, i) => b.innerText = `السؤال ${i+1}`);
+        }
+
+        function saveAll() {
+            const qs = [];
+            document.querySelectorAll('.question-card').forEach(c => {
+                qs.push({
+                    q: c.querySelector('.q-main').value,
+                    opts: Array.from(c.querySelectorAll('.opt')).map(i => i.value),
+                    ans: c.querySelector('.ans-val').value
+                });
+            });
+            localStorage.setItem('musaed_exam_local', JSON.stringify(qs));
+            document.getElementById('arrayInputText').value = "const rawQuizData = " + JSON.stringify(qs, null, 2) + ";";
+        }
 
         function importArrayQuestions() {
             try {
                 let raw = document.getElementById('arrayInputText').value.trim();
-                let parsed = eval('(' + raw + ')');
-                if (Array.isArray(parsed)) {
-                    renderQuestions(parsed);
-                    alert("تم توليد الأسئلة بنجاح!");
+                let clean = raw.replace(/^\s*(const|let|var)\s+[\w]+\s*=\s*/, '').trim();
+                let arr = eval('(' + clean + ')');
+                if (Array.isArray(arr)) {
+                    document.getElementById('quiz-content').innerHTML = "";
+                    arr.forEach(item => addQuestion(item));
+                    alert("تم استيراد الأسئلة بنجاح!");
                 }
             } catch(e) {
-                alert("تأكد من صحة كتابة المصفوفة البرمجية.");
+                alert("خطأ في تنسيق المصفوفة البرمجية.");
             }
         }
 
-        function renderQuestions(dataArr) {
-            const container = document.getElementById('quiz-content');
-            container.innerHTML = "";
-            dataArr.forEach((item, index) => {
-                let card = document.createElement('div');
-                card.className = "question-card";
-                card.innerHTML = `
-                    <div style="margin-bottom:10px;"><span class="q-number-badge">السؤال ${index+1}</span></div>
-                    <div class="q-text-input">${item.q}</div>
-                    <div class="options-grid">
-                        ${item.opts.map((opt, i) => `
-                            <div class="opt-pair-row" onclick="selectOpt(this)">
-                                <span class="opt-label">${['أ','ب','ج','د'][i]})</span>
-                                <input type="text" class="opt-word opt" readonly value="${opt}">
+        async function saveToCloud() {
+            let modelName = currentOpenModelName || prompt("أدخل اسم النموذج لحفظه في سحابة أ. مساعد:");
+            if (!modelName || !modelName.trim()) return;
+            currentOpenModelName = modelName.trim();
+            document.getElementById('current-model-label').innerText = `📁 ${currentOpenModelName}`;
+
+            const data = JSON.parse(localStorage.getItem('musaed_exam_local') || '[]');
+            const packageData = { teacher: "أ. مساعد السعدان", data: data };
+
+            try {
+                await rtdb.ref('models/' + currentOpenModelName).set(packageData);
+                await fsDb.collection("models").doc(currentOpenModelName).set(packageData);
+                alert(`تم حفظ النموذج "${currentOpenModelName}" في سحابة أ. مساعد بنجاح! 💾`);
+            } catch(e) {
+                alert("حدث خطأ أثناء الحفظ بالسحابة.");
+            }
+        }
+
+        async function loadFromCloud() {
+            try {
+                const snap = await rtdb.ref('models').once('value');
+                const models = snap.val() || {};
+                const listEl = document.getElementById('cloud-models-list');
+                listEl.innerHTML = "";
+
+                const keys = Object.keys(models);
+                if (keys.length === 0) {
+                    listEl.innerHTML = "<p style='text-align:center; padding:15px; color:#64748b;'>لا توجد نماذج محفوظة بالسحابة حالياً.</p>";
+                } else {
+                    keys.forEach(name => {
+                        listEl.innerHTML += `
+                            <div class="cloud-item">
+                                <span style="font-weight:bold; color:var(--royal-blue);">${name}</span>
+                                <button class="btn" style="background:#a855f7; padding:6px 12px;" onclick="openModelFromCloud('${name}')">فتح النموذج</button>
                             </div>
-                        `).join('')}
-                    </div>
-                    <input type="hidden" class="hidden-correct" value="${item.ans}">
-                `;
-                container.appendChild(card);
-            });
+                        `;
+                    });
+                }
+                document.getElementById('cloud-modal').style.display = 'block';
+                document.getElementById('modal-overlay').style.display = 'block';
+            } catch(e) {
+                alert("تعذر جلب النماذج من السحابة.");
+            }
         }
 
-        function selectOpt(row) {
-            row.closest('.options-grid').querySelectorAll('.opt-pair-row').forEach(r => r.classList.remove('selected-opt'));
-            row.classList.add('selected-opt');
+        async function openModelFromCloud(name) {
+            try {
+                const snap = await rtdb.ref('models/' + name).once('value');
+                if (snap.exists()) {
+                    const val = snap.val();
+                    currentOpenModelName = name;
+                    document.getElementById('current-model-label').innerText = `📁 ${name}`;
+                    document.getElementById('quiz-content').innerHTML = "";
+                    val.data.forEach(q => addQuestion(q));
+                    closeModals();
+                    alert(`تم فتح النموذج "${name}" بنجاح!`);
+                }
+            } catch(e) {
+                alert("خطأ أثناء فتح النموذج.");
+            }
         }
 
-        function generateStudentShareCode() {
-            alert("لضمان ظهور الأسئلة للطلاب 100%: ضع أسئلتك داخل مصفوفة (embeddedExamData) في الكود، واضغط نشر في GitHub Pages، وسيرى الطلاب الأسئلة فوراً مع تسجيل درجاتهم في سحاب أستاذ مساعد!");
+        function copyCurrentModelLink() {
+            if (!currentOpenModelName) {
+                alert("الرجاء حفظ النموذج أولاً لتوليد رابط المشاركة!");
+                return;
+            }
+            const link = window.location.origin + window.location.pathname + "?exam=" + encodeURIComponent(currentOpenModelName);
+            navigator.clipboard.writeText(link).then(() => alert("تم نسخ رابط الطلاب بنجاح! 🔗"));
         }
 
         async function verifyStudentEmail() {
-            const emailInput = document.getElementById('studentEmailInput').value.trim().toLowerCase();
-            const msgEl = document.getElementById('auth-status-msg');
-
-            if (!emailInput || !emailInput.includes('@')) {
-                msgEl.style.color = "var(--q-red)";
-                msgEl.innerText = "الرجاء إدخال إيميل مدرستي صحيح.";
+            const email = document.getElementById('studentEmailInput').value.trim().toLowerCase();
+            const msg = document.getElementById('auth-status-msg');
+            if (!email || !email.includes('@')) {
+                msg.style.color = "var(--q-red)";
+                msg.innerText = "الرجاء إدخال إيميل مدرستي صحيح.";
                 return;
             }
 
             try {
-                const docRef = await fsDb.collection("allowed_students").doc(emailInput).get();
-                if (!docRef.exists) {
-                    msgEl.style.color = "var(--q-red)";
-                    msgEl.innerText = "❌ هذا الإيميل غير مسجل في قائمة طلاب المدرسة المعتمدين لدى أ. مساعد!";
+                const doc = await fsDb.collection("allowed_students").doc(email).get();
+                if (!doc.exists) {
+                    msg.style.color = "var(--q-red)";
+                    msg.innerText = "❌ هذا الإيميل غير مسجل في قائمة الطلاب المعتمدين لدى أ. مساعد!";
                     return;
                 }
-
-                authenticatedStudentEmail = emailInput;
-                authenticatedStudentName = docRef.data().name || "طالب";
+                authenticatedStudentEmail = email;
+                authenticatedStudentName = doc.data().name || "طالب";
 
                 document.getElementById('student-auth-container').style.display = 'none';
                 document.getElementById('quiz-content').style.display = 'block';
                 document.getElementById('student-actions').style.display = 'block';
-
-                alert(`أهلاً بك يا ${authenticatedStudentName} 🌟. يمكنك بدء الاختبار الآن.`);
-            } catch (err) {
-                msgEl.style.color = "var(--q-red)";
-                msgEl.innerText = "حدث خطأ في الاتصال بقاعدة بيانات أستاذ مساعد.";
+                alert(`أهلاً بك يا ${authenticatedStudentName} 🌟. ابدأ الاختبار الآن.`);
+            } catch(e) {
+                msg.style.color = "var(--q-red)";
+                msg.innerText = "خطأ في الاتصال بقاعدة البيانات.";
             }
         }
 
         async function gradeExam() {
             const cards = document.querySelectorAll('.question-card');
             let score = 0;
-            let total = cards.length;
             let details = [];
 
             cards.forEach(c => {
-                let selected = c.querySelector('.selected-opt .opt')?.value || "";
-                let correct = c.querySelector('.hidden-correct').value;
-                let qText = c.querySelector('.q-text-input').innerText;
-                let isCorr = (selected.trim() === correct.trim());
+                let sel = c.querySelector('.selected-opt .opt')?.value || "";
+                let corr = c.querySelector('.ans-val')?.value || "";
+                let qTxt = c.querySelector('.q-main').value;
+                let isCorr = (sel.trim() === corr.trim());
                 if (isCorr) score++;
-                details.push({ q: qText, studentAns: selected, correctAns: correct, isCorrect: isCorr });
+                details.push({ q: qTxt, studentAns: sel, correctAns: corr, isCorrect: isCorr });
             });
 
-            if (!confirm("هل أنت متأكد من اعتماد النتيجة؟")) return;
+            if (!confirm("هل أنت متأكد من إرسال نتيجتك النهائية؟")) return;
 
+            const examId = new URLSearchParams(window.location.search).get('exam') || "اختبار عام";
             try {
                 await fsDb.collection("alkfaeat_results").add({
                     name: authenticatedStudentName,
                     email: authenticatedStudentEmail,
                     score: score,
-                    total: total,
-                    model_id: "اختبار الكفايات",
+                    total: cards.length,
+                    model_id: examId,
                     answers: details,
                     time: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 document.getElementById('student-actions').innerHTML = `
-                    <div style="background:#dcfce7; color:#166534; padding:20px; border-radius:12px; font-weight:bold; border:1px solid #bbf7d0;">
-                        🎉 تم اعتماد وررسال درجتك بنجاح إلى لوحة شرف أ. مساعد السعدان!<br>
-                        نتيجتك: ${score} من ${total}
+                    <div style="background:#dcfce7; color:#166534; padding:20px; border-radius:12px; font-weight:bold;">
+                        🎉 تم إرسال واعتماد درجتك بنجاح في سحاب أ. مساعد السعدان!<br>
+                        درجتك: ${score} من ${cards.length}
                     </div>
                 `;
-            } catch (err) {
-                alert("حدث خطأ أثناء حفظ النتيجة في السحابة.");
+            } catch(e) {
+                alert("خطأ أثناء إرسال النتيجة للسحابة.");
             }
         }
 
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('exam') || window.location.protocol.includes('http')) {
+        function closeModals() {
+            document.getElementById('cloud-modal').style.display = 'none';
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        window.onload = async function() {
+            const examParam = new URLSearchParams(window.location.search).get('exam');
+            if (examParam) {
                 document.body.classList.add('student-mode');
                 document.getElementById('student-auth-container').style.display = 'block';
+                document.getElementById('student-exam-title-badge').style.display = 'block';
+                document.getElementById('student-exam-title-badge').innerText = `📄 اختبار النموذج: ${examParam}`;
+                
+                try {
+                    const snap = await rtdb.ref('models/' + examParam).once('value');
+                    if (snap.exists()) {
+                        const val = snap.val();
+                        document.getElementById('quiz-content').innerHTML = "";
+                        val.data.forEach(q => addQuestion(q));
+                    }
+                } catch(e) {}
+            } else {
+                document.getElementById('quiz-content').style.display = 'block';
+                const local = localStorage.getItem('musaed_exam_local');
+                if (local) {
+                    JSON.parse(local).forEach(q => addQuestion(q));
+                } else {
+                    addQuestion();
+                }
             }
-            renderQuestions(embeddedExamData);
         };
     </script>
 </body>
