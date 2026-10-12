@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة أ. عبدالعزيز الفيفي وأ. مساعد السعدان - النسخة المعتمدة</title>
+    <title>منصة أ. مساعد السعدان - النسخة المعتمدة</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -409,21 +408,17 @@
         let currentExamEndTime = "";
         let examTimerInterval = null;
 
-        // إعدادات سحابة وقاعدة بيانات الأستاذ مساعد السعدان المستخرجة من الكود الثاني
+        // إعدادات مشروع أستاذ مساعد (msad-e258c) المعتمدة على Firestore
         const firebaseConfig = {
             apiKey: "AIzaSyDGftCpTmowkhQlNAgH_o7dIMtD-RKSNaM",
             authDomain: "msad-e258c.firebaseapp.com",
-            databaseURL: "https://msad-e258c-default-rtdb.firebaseio.com",
             projectId: "msad-e258c",
             storageBucket: "msad-e258c.firebasestorage.app",
             messagingSenderId: "680278639571",
             appId: "1:680278639571:web:4e337e1751ebe9d9e92526"
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-
-        const secondaryApp = firebase.apps.length > 1 ? firebase.apps[1] : firebase.initializeApp(firebaseConfig, "secondary");
-        const fsDb = secondaryApp.firestore();
-        const rtdb = firebase.database();
+        const fsDb = firebase.firestore();
 
         function toggleDropdown(event) {
             event.stopPropagation();
@@ -459,10 +454,8 @@
             let modelNamesSet = new Set(Object.keys(savedModels));
 
             try {
-                const snap = await rtdb.ref('models').once('value');
-                if (snap.exists()) {
-                    Object.keys(snap.val()).forEach(name => modelNamesSet.add(name));
-                }
+                const snap = await fsDb.collection("models").get();
+                snap.forEach(doc => modelNamesSet.add(doc.id));
             } catch(e) {}
 
             try {
@@ -505,7 +498,7 @@
                     localStorage.setItem('musaed_all_saved_models', JSON.stringify(savedModels));
                 }
                 try {
-                    await rtdb.ref('models/' + currentOpenModelName).update({
+                    await fsDb.collection("models").doc(currentOpenModelName).update({
                         startTime: currentExamStartTime,
                         endTime: currentExamEndTime
                     });
@@ -739,7 +732,7 @@
                 let studentAns = data?.studentAns || {};
                 let subScores = data?.subScores || data?.matchScores || leftOpts.map(() => 1);
 
-                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول مع درجة كل فقرةين):</h4>`;
+                let leftHtml = `<div class="matching-box"><h4 style="margin:0 0 10px; color:var(--royal-blue); font-size:1rem;">الفقرات (العمود الأول مع درجة كل فقرة):</h4>`;
                 leftOpts.forEach((item, idx) => {
                     let sVal = studentAns[idx] || '';
                     let subScoreVal = subScores[idx] !== undefined ? subScores[idx] : 1;
@@ -1484,11 +1477,16 @@
             }
         }
 
-        function loadFromCloud() {
+        async function loadFromCloud() {
             let savedModels = JSON.parse(localStorage.getItem('musaed_all_saved_models') || '{}');
             
-            rtdb.ref('models').once('value', snapshot => {
-                const cloudMs = snapshot.val() || {};
+            try {
+                const snapshot = await fsDb.collection("models").get();
+                let cloudMs = {};
+                snapshot.forEach(doc => {
+                    cloudMs[doc.id] = doc.data();
+                });
+
                 let combinedNames = Array.from(new Set([...Object.keys(savedModels), ...Object.keys(cloudMs)]));
                 
                 const listContainer = document.getElementById('cloud-models-list');
@@ -1512,29 +1510,9 @@
                 }
                 document.getElementById('cloud-modal').style.display = 'block';
                 document.getElementById('modal-overlay').style.display = 'block';
-            }).catch(() => {
-                let combinedNames = Object.keys(savedModels);
-                const listContainer = document.getElementById('cloud-models-list');
-                listContainer.innerHTML = "";
-                if(combinedNames.length === 0) {
-                    listContainer.innerHTML = "<p style='text-align:center; padding:20px; color:#64748b;'>لا توجد أي نماذج محفوظة حالياً.</p>";
-                } else {
-                    combinedNames.forEach(name => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'cloud-item';
-                        itemDiv.innerHTML = `
-                            <div style="font-weight:bold; color:var(--royal-blue); text-align:right; flex:1; min-width:120px;">${name}</div>
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn" style="background:#a855f7; padding:6px 12px;" onclick="openModel('${name}')"><i class="fas fa-folder-open"></i> فتح</button>
-                                <button class="btn" style="background:#ef4444; padding:6px 12px;" onclick="deleteSpecificModel('${name}')"><i class="fas fa-trash"></i> حذف</button>
-                            </div>
-                        `;
-                        listContainer.appendChild(itemDiv);
-                    });
-                }
-                document.getElementById('cloud-modal').style.display = 'block';
-                document.getElementById('modal-overlay').style.display = 'block';
-            });
+            } catch(e) {
+                console.error(e);
+            }
         }
 
         async function deleteSpecificModel(modelName) {
@@ -1543,7 +1521,7 @@
                 delete savedModels[modelName];
                 localStorage.setItem('musaed_all_saved_models', JSON.stringify(savedModels));
                 try {
-                    await rtdb.ref('models/' + modelName).remove();
+                    await fsDb.collection("models").doc(modelName).delete();
                 } catch(e){}
                 alert(`تم حذف النموذج "${modelName}" بنجاح.`);
                 if (currentOpenModelName === modelName) {
@@ -1576,24 +1554,28 @@
                 return;
             }
 
-            rtdb.ref('models/' + name).once('value', snap => {
-                if (snap.val()) {
+            try {
+                const docRef = await fsDb.collection("models").doc(name).get();
+                if (docRef.exists) {
+                    let data = docRef.data();
                     currentOpenModelName = name;
-                    currentExamStartTime = snap.val().startTime || "";
-                    currentExamEndTime = snap.val().endTime || "";
+                    currentExamStartTime = data.startTime || "";
+                    currentExamEndTime = data.endTime || "";
                     
                     document.getElementById('current-model-label').innerText = `📁 ${name}`;
-                    localStorage.setItem('musaed_final_v_secured', JSON.stringify(snap.val().data || []));
+                    localStorage.setItem('musaed_final_v_secured', JSON.stringify(data.data || []));
                     
                     document.getElementById('quiz-content').innerHTML = "";
-                    if (snap.val().data) {
-                        snap.val().data.forEach(q => addQuestion(q));
+                    if (data.data) {
+                        data.data.forEach(q => addQuestion(q));
                     }
                     closeModals();
                 } else {
                     alert("هذا النموذج غير موجود.");
                 }
-            });
+            } catch(e) {
+                console.error(e);
+            }
         }
 
         function copyCurrentModelLink() {
@@ -1625,10 +1607,10 @@
             }
 
             try {
-                const snap = await rtdb.ref('models/' + currentOpenModelName).once('value');
-                if (snap.exists()) {
-                    await rtdb.ref('models/' + newName.trim()).set(snap.val());
-                    await rtdb.ref('models/' + currentOpenModelName).remove();
+                const docSnap = await fsDb.collection("models").doc(currentOpenModelName).get();
+                if (docSnap.exists) {
+                    await fsDb.collection("models").doc(newName.trim()).set(docSnap.data());
+                    await fsDb.collection("models").doc(currentOpenModelName).delete();
                 }
             } catch(e){}
 
@@ -1648,7 +1630,7 @@
                 delete savedModels[currentOpenModelName];
                 localStorage.setItem('musaed_all_saved_models', JSON.stringify(savedModels));
                 try {
-                    await rtdb.ref('models/' + currentOpenModelName).remove();
+                    await fsDb.collection("models").doc(currentOpenModelName).delete();
                 } catch(e){}
                 alert("تم حذف النموذج بنجاح.");
                 currentOpenModelName = null;
@@ -1685,8 +1667,10 @@
             localStorage.setItem('musaed_all_saved_models', JSON.stringify(savedModels));
 
             try {
-                await rtdb.ref('models/' + currentOpenModelName).set(modelPackage);
-            } catch(e) {}
+                await fsDb.collection("models").doc(currentOpenModelName).set(modelPackage);
+            } catch(e) {
+                console.error(e);
+            }
 
             alert(`تم حفظ نموذج "${currentOpenModelName}" بنجاح وتثبيته في سحاب أ. مساعد السعدان! 💾`);
             populateTeacherModelDropdown();
@@ -1768,7 +1752,7 @@
                     localStorage.setItem('musaed_all_saved_models', JSON.stringify(savedModels));
                 }
                 try {
-                    rtdb.ref('models/' + currentOpenModelName).update({
+                    fsDb.collection("models").doc(currentOpenModelName).update({
                         teacher: "أ. مساعد السعدان",
                         data: qs,
                         startTime: currentExamStartTime,
@@ -1779,7 +1763,7 @@
             }
         }
 
-        function loadQuestions() { 
+        async function loadQuestions() { 
             populateTeacherModelDropdown();
             const id = new URLSearchParams(window.location.search).get('exam'); 
             if (id) { 
@@ -1805,21 +1789,26 @@
                     return;
                 }
 
-                rtdb.ref('models/' + id).once('value', s => { 
-                    if (s.val()) {
+                try {
+                    const docSnap = await fsDb.collection("models").doc(id).get();
+                    if (docSnap.exists) {
+                        let data = docSnap.data();
                         currentOpenModelName = id;
-                        currentExamStartTime = s.val().startTime || "";
-                        currentExamEndTime = s.val().endTime || "";
+                        currentExamStartTime = data.startTime || "";
+                        currentExamEndTime = data.endTime || "";
 
                         document.getElementById('current-model-label').innerText = `📁 ${id}`;
-                        loadedExamQuestions = s.val().data || [];
+                        loadedExamQuestions = data.data || [];
                         let shuffledQuestions = shuffleArray([...loadedExamQuestions]);
                         shuffledQuestions.forEach(q => addQuestion(q));
                         setTimeout(() => { document.querySelectorAll('textarea').forEach(ta => autoResizeTextarea(ta)); }, 100);
                     } else {
-                        alert("هذا النموذج غير موجود.");
+                        alert("هذا النموذج غير موجود في السحابة.");
                     }
-                }); 
+                } catch (err) {
+                    console.error(err);
+                    alert("حدث خطأ أثناء تحميل الأسئلة من السحابة.");
+                }
             } else { 
                 document.querySelector('.container').style.display = 'block';
                 const s = localStorage.getItem('musaed_final_v_secured'); 
